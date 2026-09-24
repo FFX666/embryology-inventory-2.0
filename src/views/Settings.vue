@@ -34,28 +34,28 @@
       <div class="inline-form">
         <div class="form-item">
           <label>账号</label>
-          <el-input v-model="newUser.username" placeholder="请输入账号" />
+          <el-input v-model="userForm.username" placeholder="请输入账号" :disabled="!!userForm.id" />
         </div>
         <div class="form-item">
           <label>姓名/显示名</label>
-          <el-input v-model="newUser.name" placeholder="请输入姓名" />
+          <el-input v-model="userForm.name" placeholder="请输入姓名" />
         </div>
         <div class="form-item">
           <label>权限角色</label>
-          <el-select v-model="newUser.role" placeholder="请选择角色">
+          <el-select v-model="userForm.role" placeholder="请选择角色">
             <el-option label="普通入库员" value="user" />
             <el-option label="管理员" value="admin" />
           </el-select>
         </div>
         <div class="form-item">
           <label>初始/重置密码</label>
-          <el-input v-model="newUser.password" placeholder="请输入初始密码" />
+          <el-input v-model="userForm.password" placeholder="留空则不修改密码" />
         </div>
         <div class="form-checkbox">
-          <el-checkbox v-model="newUser.status">* 启用</el-checkbox>
+          <el-checkbox v-model="userForm.status">* 启用</el-checkbox>
         </div>
         <div class="form-buttons">
-          <el-button type="success" @click="addUser">保存账号</el-button>
+          <el-button type="success" @click="saveUser">{{ userForm.id ? '保存修改' : '保存账号' }}</el-button>
           <el-button @click="clearUser">清空</el-button>
         </div>
       </div>
@@ -68,9 +68,18 @@
             <span>{{ row.role === 'admin' ? '管理员' : '普通入库员' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="150" align="center">
+        <el-table-column label="状态" width="120" align="center">
           <template #default="{ row }">
             <span>{{ row.status ? '启用' : '停用' }}</span>
+          </template>
+        </el-table-column>
+        <!-- 新增：操作列 -->
+        <el-table-column label="操作" width="180" align="center">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="editUser(row)">修改</el-button>
+            <el-button link :type="row.status ? 'danger' : 'success'" @click="toggleUserStatus(row)">
+              {{ row.status ? '停用' : '启用' }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -126,7 +135,7 @@
 
 <script setup>
 import { reactive, ref, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { api } from '@/api'
 import { useUserStore } from '@/store/user'
 
@@ -149,22 +158,47 @@ async function changePwd() {
 
 // ----- 区域二：账号权限管理 -----
 const users = ref([])
-const newUser = reactive({ username: '', name: '', role: 'user', password: '', status: true })
+const userForm = reactive({ id: null, username: '', name: '', role: 'user', password: '', status: true })
 
 async function loadUsers() { users.value = await api.user.list() }
 
-async function addUser() {
-  if (!newUser.username || !newUser.password) { ElMessage.warning('工号密码必填'); return }
+function editUser(row) {
+  userForm.id = row.id
+  userForm.username = row.username
+  userForm.name = row.name
+  userForm.role = row.role
+  userForm.password = '' // 留空表示不修改密码
+  userForm.status = !!row.status
+}
+
+async function saveUser() {
+  if (!userForm.username || (!userForm.id && !userForm.password)) { 
+    ElMessage.warning('请填写完整信息'); return 
+  }
   const op = store.user
-  const res = await api.user.save({ ...newUser, _op: op.username, _opName: op.name })
+  const payload = { ...userForm, _op: op.username, _opName: op.name }
+  
+  const res = await api.user.save(payload)
   if (res.ok === false) { ElMessage.error(res.msg); return }
-  ElMessage.success('已保存')
+  ElMessage.success(userForm.id ? '修改成功' : '新增成功')
   clearUser()
   loadUsers()
 }
 
 function clearUser() {
-  newUser.username = ''; newUser.name = ''; newUser.role = 'user'; newUser.password = ''; newUser.status = true
+  Object.assign(userForm, { id: null, username: '', name: '', role: 'user', password: '', status: true })
+}
+
+async function toggleUserStatus(row) {
+  const action = row.status ? '停用' : '启用'
+  await ElMessageBox.confirm(`确定${action}账号【${row.username}】吗？`, '提示', { type: 'warning' })
+  const op = store.user
+  await api.user.save({
+    id: row.id, username: row.username, name: row.name, role: row.role,
+    status: row.status ? 0 : 1, _op: op.username, _opName: op.name
+  })
+  ElMessage.success(`已${action}`)
+  loadUsers()
 }
 
 // ----- 区域三：下拉选项维护 -----
