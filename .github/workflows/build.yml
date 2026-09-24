@@ -17,10 +17,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # 删除了 cache: 'npm'，因为网页端没有上传 package-lock.json
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        # 添加 --legacy-peer-deps 避免没有锁定文件时的依赖冲突
+        run: npm install --legacy-peer-deps --no-audit --no-fund
         env:
           npm_config_build_from_source: 'true'
 
