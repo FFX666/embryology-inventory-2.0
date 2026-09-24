@@ -61,3 +61,4 @@
       "artifactName": "${productName}-便携版-${version}.${ext}"
     }
   }
+}
