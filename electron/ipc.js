@@ -49,23 +49,29 @@ function registerIpc() {
 
   ipcMain.handle('user:save', (_, d) => {
     if (d.id) {
-      db().prepare('UPDATE users SET name=?, role=?, status=? WHERE id=?')
-        .run(d.name, d.role, d.status ?? 1, d.id)
-      writeLog(d._op, d._opName, '账号权限', '修改账号', `auth.User ${d.id}`,
-        `账号: ${d.username}, 角色: ${d.role}`)
+      // 修改账号（支持姓名、角色、状态、重置密码）
+      let sql = 'UPDATE users SET name=?, role=?, status=?'
+      const params = [d.name, d.role, d.status ?? 1]
+      
+      // 如果传入了新密码，则一并更新密码
+      if (d.password && d.password.trim() !== '') {
+        sql += ', password=?'
+        params.push(hashPassword(d.password))
+      }
+      
+      sql += ' WHERE id=?'
+      params.push(d.id)
+      
+      db().prepare(sql).run(...params)
+      writeLog(d._op, d._opName, '账号权限', '修改账号', `auth.User ${d.id}`, `账号: ${d.username}, 角色: ${d.role}`)
     } else {
+      // 新增账号
       if (!d.username || !d.password) return { ok: false, msg: '工号和密码必填' }
       db().prepare(
         'INSERT INTO users (username, name, password, role, status, created_at) VALUES (?,?,?,?,?,?)'
       ).run(d.username, d.name, hashPassword(d.password), d.role || 'user', 1, now())
       writeLog(d._op, d._opName, '账号权限', '新增账号', d.username, `角色: ${d.role}`)
     }
-    return { ok: true }
-  })
-
-  ipcMain.handle('user:remove', (_, d) => {
-    db().prepare('UPDATE users SET status = 0 WHERE id = ?').run(d.id)
-    writeLog(d._op, d._opName, '账号权限', '禁用账号', `auth.User ${d.id}`, '')
     return { ok: true }
   })
 
