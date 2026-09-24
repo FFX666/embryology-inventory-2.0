@@ -16,14 +16,17 @@
         <h3>账号登录</h3>
         <p class="tip">请输入工号，系统将自动显示对应姓名</p>
         <el-form :model="form" label-position="top" @submit.prevent>
+          
+          <!-- 工号输入与实时验证区域 -->
           <el-form-item label="工号">
             <el-input 
               v-model="form.username" 
               placeholder="请输入工号"
-              @blur="checkWorkId" 
+              @input="checkWorkId" 
               @keyup.enter="doLogin" 
             />
-            <div class="hint-text" v-if="nameState === 'found'">姓名：{{ form.name }}</div>
+            <!-- 实时提示信息，紧贴在工号下方 -->
+            <div class="hint-text success" v-if="nameState === 'found'">姓名：{{ form.name }}</div>
             <div class="hint-text error" v-if="nameState === 'notfound'">未找到该工号</div>
           </el-form-item>
           
@@ -57,23 +60,33 @@ import { api } from '@/api'
 const router = useRouter()
 const store = useUserStore()
 const form = reactive({ username: '', name: '', password: '' })
-const nameState = ref('')
+const nameState = ref('') // '' | 'found' | 'notfound'
 
-async function checkWorkId() {
+let debounceTimer = null
+
+// 实时校验工号，带防抖处理
+function checkWorkId() {
+  clearTimeout(debounceTimer)
+  
+  // 如果输入框被清空，立刻清除提示和姓名
   if (!form.username) {
     form.name = ''
     nameState.value = ''
     return
   }
-  const list = await api.user.list()
-  const u = list.find(x => x.username === form.username)
-  if (u) {
-    form.name = u.name
-    nameState.value = 'found'
-  } else {
-    form.name = ''
-    nameState.value = 'notfound'
-  }
+
+  // 延迟300ms查询，避免用户连续输入时频繁发起请求
+  debounceTimer = setTimeout(async () => {
+    const list = await api.user.list()
+    const u = list.find(x => x.username === form.username.trim())
+    if (u) {
+      form.name = u.name
+      nameState.value = 'found'
+    } else {
+      form.name = ''
+      nameState.value = 'notfound'
+    }
+  }, 300)
 }
 
 async function doLogin() {
@@ -81,9 +94,15 @@ async function doLogin() {
     ElMessage.warning('请输入工号和密码')
     return
   }
+  
+  // 确保登录前已经校验过工号（防止用户输入后瞬间点击登录，防抖还没执行）
   if (nameState.value !== 'found') {
-    await checkWorkId()
-    if (nameState.value !== 'found') {
+    const list = await api.user.list()
+    const u = list.find(x => x.username === form.username.trim())
+    if (u) {
+      form.name = u.name
+      nameState.value = 'found'
+    } else {
       ElMessage.error('未找到该工号或工号无效')
       return
     }
@@ -119,8 +138,12 @@ onMounted(() => {
 .right { flex:1; padding:36px 40px; }
 .right h3 { margin:0 0 6px; }
 .right .tip { color:#888; font-size:13px; margin:0 0 16px; }
-.hint-text { font-size: 13px; color: #4a9d92; margin-top: 4px; }
+
+/* 提示文字样式 */
+.hint-text { font-size: 13px; margin-top: 4px; line-height: 1; }
+.hint-text.success { color: #4a9d92; }
 .hint-text.error { color: #f56c6c; }
+
 .btns { display:flex; gap:12px; margin-top:10px; }
 .btns .el-button { flex:1; }
 </style>
