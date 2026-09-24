@@ -17,18 +17,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # 删除了 cache: 'npm'，因为网页端没有上传 package-lock.json
+          # 网页端操作没有 package-lock.json，因此不能开启 cache: 'npm'
+
+      # 这一步非常关键：激活 Windows 上的 MSVC 编译环境，解决 better-sqlite3 的 node-gyp 编译报错
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       - name: Install dependencies
-        # 添加 --legacy-peer-deps 避免没有锁定文件时的依赖冲突
+        # 使用 --legacy-peer-deps 避免没有 lock 文件时的依赖冲突
+        # 移除 npm_config_build_from_source，让它尽量用预编译包，然后再由 electron-builder 处理
         run: npm install --legacy-peer-deps --no-audit --no-fund
-        env:
-          npm_config_build_from_source: 'true'
 
       - name: Build renderer
         run: npm run build
 
       - name: Build Electron app (Windows)
+        # 打包成 .exe
         run: npx electron-builder --win --publish never
 
       - name: Upload EXE artifact
