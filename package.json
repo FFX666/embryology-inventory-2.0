@@ -33,7 +33,7 @@
   },
   "build": {
     "appId": "com.embryology.inventory",
-    "productName": "胚胎实验室库存管理",
+    "productName": "embryology-inventory",
     "directories": { "output": "release" },
     "files": [
       "dist/**/*",
