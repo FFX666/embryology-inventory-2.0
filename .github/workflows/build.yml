@@ -1,12 +1,13 @@
-name: Build Windows EXE
+name: Build Windows Installer
 
 on:
-  push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]
+  # 只有当你在 GitHub 页面上点击 "Publish release"（发布新版本）时才触发
+  release:
+    types: [published]
+  # 保留手动触发，方便在网页端修改代码后手动测试，如果不需要可以删掉下面这行
   workflow_dispatch:
 
-# ⚠️ 必须加上这一行，赋予 GITHUB_TOKEN 创建和更新 Release 的权限
+# 必须加上这一行，赋予 GITHUB_TOKEN 创建和更新 Release 的权限
 permissions:
   contents: write
 
@@ -48,8 +49,8 @@ jobs:
             release/latest.yml
           if-no-files-found: warn
 
-      - name: Upload to Release (仅 tag 触发)
-        if: startsWith(github.ref, 'refs/tags/v')
+      # 只要触发了这个 workflow，说明必定是发布了新 Release，直接上传文件
+      - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
