@@ -1,5 +1,6 @@
 <template>
   <el-container style="height:100%">
+    <!-- 左侧菜单 -->
     <el-aside width="200px" class="side">
       <div class="logo">胚胎实验室库存管理</div>
       <el-menu :default-active="$route.path" router background-color="#3e8f84"
@@ -16,6 +17,8 @@
         <el-menu-item index="/settings"><el-icon><Setting /></el-icon>系统设置</el-menu-item>
       </el-menu>
     </el-aside>
+    
+    <!-- 右侧内容 -->
     <el-container>
       <el-header class="topbar">
         <div class="title">胚胎实验室库存管理</div>
@@ -25,22 +28,48 @@
           <el-button size="small" type="danger" @click="logout">退出登录</el-button>
         </div>
       </el-header>
-      <el-main style="background:#eaf5f2">
+      
+      <el-main style="background:#eaf5f2; padding: 16px;">
         <router-view />
       </el-main>
+      
+      <!-- 底部状态栏，对应图片左下角 -->
+      <el-footer height="28px" class="footer-bar">
+        <span>当前页面：{{ currentPageName }}</span>
+        <span style="margin-left: 20px;">数据目录：{{ dbPath }}</span>
+      </el-footer>
     </el-container>
   </el-container>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { api } from '@/api'
 
 const router = useRouter()
+const route = useRoute()
 const store = useUserStore()
 const user = computed(() => store.user)
 const roleText = computed(() => user.value?.role === 'admin' ? '管理员' : '普通入库员')
+
+const dbPath = ref('加载中...')
+
+const currentPageName = computed(() => {
+  const map = {
+    '/dashboard': '工作台', '/base': '基础档案', '/inbound': '入库管理',
+    '/outbound': '出库领用', '/stockcheck': '库存盘点', '/query': '查询中心',
+    '/report': '报表导出', '/backup': '备份恢复', '/logs': '操作日志', '/settings': '系统设置'
+  }
+  return map[route.path] || '工作台'
+})
+
+onMounted(async () => {
+  // 获取数据库路径
+  const paths = await api.app.paths()
+  dbPath.value = paths.dbPath
+})
 
 function goSettings() { router.push('/settings') }
 function logout() {
@@ -57,4 +86,10 @@ function logout() {
   align-items:center; border-bottom:1px solid #eee; }
 .topbar .title { font-weight:bold; }
 .topbar .user { display:flex; gap:8px; align-items:center; color:#555; font-size:13px; }
+
+/* 底部状态栏样式 */
+.footer-bar {
+  background: #e0eee9; color: #666; font-size: 12px; display: flex;
+  align-items: center; padding: 0 16px; border-top: 1px solid #d0e0da;
+}
 </style>
