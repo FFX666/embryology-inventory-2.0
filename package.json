@@ -44,7 +44,10 @@
       "**/node_modules/better-sqlite3/**"
     ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
       "icon": "build/icon.ico"
     },
     "nsis": {
@@ -53,6 +56,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "胚胎实验室库存管理"
+    },
+    "portable": {
+      "artifactName": "${productName}-便携版-${version}.${ext}"
     }
   }
-}
