@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- 顶部统计卡片 -->
     <div class="cards">
       <div class="card" @click="goFilter('')">
         <div>基础档案</div><b>{{ s.totalMaterial }}</b>
@@ -18,10 +19,15 @@
       </div>
     </div>
 
+    <!-- 实时库存总表 -->
     <div class="page-card">
+      <div class="table-title">实时库存总表</div>
       <div class="toolbar">
-        <el-input v-model="q.materialName" placeholder="耗材名称" style="width:200px" />
+        <el-select v-model="q.materialName" placeholder="耗材名称" clearable style="width:200px">
+          <el-option label="全部" value="" />
+        </el-select>
         <el-select v-model="q.category" placeholder="分类" clearable style="width:160px">
+          <el-option label="全部" value="" />
           <el-option v-for="c in categories" :key="c.label" :label="c.label" :value="c.label" />
         </el-select>
         <el-select v-model="q.status" placeholder="状态" clearable style="width:140px">
@@ -33,15 +39,15 @@
         <el-button @click="reset">重置</el-button>
       </div>
 
-      <el-table :data="rows" border height="480" size="small">
+      <el-table :data="rows" border height="480" size="small" style="width: 100%">
         <el-table-column prop="material_name" label="耗材名称" min-width="200" />
         <el-table-column prop="category" label="分类" width="100" />
-        <el-table-column prop="batch_no" label="批号" width="120" />
+        <el-table-column prop="batch_no" label="批次" width="120" />
         <el-table-column prop="expiry_date" label="最近有效期" width="120" />
         <el-table-column prop="quantity" label="当前总库存" width="110" />
         <el-table-column prop="unit" label="单位" width="70" />
         <el-table-column prop="shelf_location" label="货架号" width="100" />
-        <el-table-column label="状态" width="100">
+        <el-table-column label="状态" width="100" fixed="right">
           <template #default="{ row }">
             <el-tag v-if="isExpired(row)" type="danger">过期</el-tag>
             <el-tag v-else-if="isLow(row)" type="warning">低库存</el-tag>
@@ -79,6 +85,7 @@ async function load() {
 
 function goFilter(kind) {
   if (kind === 'low' || kind === 'expired') q.status = kind
+  else q.status = ''
   load()
 }
 
@@ -93,10 +100,13 @@ onMounted(load)
 <style scoped>
 .cards { display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:12px; }
 .card { background:#fff; padding:16px; border-radius:6px; cursor:pointer; transition:.2s;
-  display:flex; flex-direction:column; gap:8px; }
+  display:flex; flex-direction:column; gap:8px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
 .card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.08); }
 .card b { font-size:26px; color:#3e8f84; }
 .card.low { background:#e8f5e9; } .card.low b { color:#2e7d32; }
 .card.warn { background:#fff8e1; } .card.warn b { color:#ef6c00; }
 .card.danger { background:#ffebee; } .card.danger b { color:#c62828; }
+
+.table-title { font-size: 15px; font-weight: bold; color: #333; margin-bottom: 10px; border-left: 4px solid #4a9d92; padding-left: 8px; }
+.toolbar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
 </style>
