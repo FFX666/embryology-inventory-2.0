@@ -30,23 +30,38 @@
     <div class="page-card">
       <div class="table-title">实时库存总表</div>
       
-      <!-- 过滤器：完全按照图片6个下拉框 -->
+      <!-- 过滤器：完全按照图片项目排列，并补充“批次数”下拉菜单 -->
       <div class="toolbar">
-        <el-select v-model="q.materialName" placeholder="耗材名称" clearable style="width:140px">
+        <el-select v-model="q.materialName" placeholder="耗材名称" clearable style="width:150px">
           <el-option label="全部" value="" />
         </el-select>
-        <el-select v-model="q.category" placeholder="分类" clearable style="width:100px">
+        <el-select v-model="q.category" placeholder="分类" clearable style="width:110px">
           <el-option label="全部" value="" />
           <el-option v-for="c in categories" :key="c.label" :label="c.label" :value="c.label" />
         </el-select>
-        <el-select v-model="q.expiry" placeholder="有效期" clearable style="width:100px">
+        <!-- 补充用户要求的“批次数”下拉 -->
+        <el-select v-model="q.batch_count" placeholder="批次数" clearable style="width:100px">
           <el-option label="全部" value="" />
+          <el-option label="1次" value="1" />
+          <el-option label="2次" value="2" />
+          <el-option label="3次及以上" value="3" />
+        </el-select>
+        <el-select v-model="q.expiry" placeholder="有效期" clearable style="width:120px">
+          <el-option label="全部" value="" />
+          <el-option label="已过期" value="expired" />
+          <el-option label="30天内临期" value="near" />
         </el-select>
         <el-select v-model="q.unit" placeholder="单位" clearable style="width:100px">
           <el-option label="全部" value="" />
+          <el-option label="瓶" value="瓶" />
+          <el-option label="盒" value="盒" />
+          <el-option label="支" value="支" />
+          <el-option label="套" value="套" />
         </el-select>
         <el-select v-model="q.shelf_location" placeholder="货架号" clearable style="width:100px">
           <el-option label="全部" value="" />
+          <el-option label="冰箱" value="冰箱" />
+          <el-option label="耗材间" value="耗材间" />
         </el-select>
         <el-select v-model="q.status" placeholder="状态" clearable style="width:100px">
           <el-option label="全部" value="" />
@@ -58,9 +73,11 @@
         <el-button @click="reset">重置</el-button>
       </div>
 
+      <!-- 表格完全对应上方筛选器 -->
       <el-table :data="rows" border height="480" size="small" style="width: 100%">
-        <el-table-column prop="material_name" label="耗材名称" min-width="200" />
-        <el-table-column prop="category" label="分类" width="100" />
+        <el-table-column prop="material_name" label="耗材名称" min-width="180" />
+        <el-table-column prop="category" label="分类" width="100" align="center" />
+        <!-- 显示批次数列 -->
         <el-table-column prop="batch_count" label="批次数" width="80" align="center" />
         <el-table-column prop="expiry_date" label="最近有效期" width="120" align="center" />
         <el-table-column prop="quantity" label="当前总库存" width="110" align="center" />
@@ -87,24 +104,24 @@ const s = reactive({ totalMaterial:0, lowStock:0, nearExpiry:0, expired:0, today
 const rows = ref([])
 const categories = ref([])
 const q = reactive({ 
-  materialName: '', category: '', expiry: '', unit: '', shelf_location: '', status: '' 
+  materialName: '', category: '', batch_count: '', expiry: '', 
+  unit: '', shelf_location: '', status: '' 
 })
 
 const isExpired = (r) => r.expiry_date && dayjs(r.expiry_date).isBefore(dayjs(), 'day')
 const isLow = (r) => r.warn_threshold != null && r.quantity > 0 && r.quantity <= r.warn_threshold
 
 async function load() {
-  // 这里后端需要支持多字段过滤，如果后端未更新可先传参，后端忽略即可
   const [sum, list, cats] = await Promise.all([
     api.stock.summary(),
     api.stock.list({ ...q }),
     api.dict.list({ type: 'category' })
   ])
   Object.assign(s, sum)
-  // 假设后端返回的数据里包含 batch_count（批次数），如果没有则在前端简单模拟或修改后端
+  // 后端如果没有返回 batch_count（批次数），前端临时赋默认值 1 避免表格空白
   rows.value = list.map(item => ({
     ...item,
-    batch_count: item.batch_count || 1 // 后端如果没返回，先给默认值
+    batch_count: item.batch_count || 1 
   }))
   categories.value = cats
 }
@@ -116,8 +133,8 @@ function goFilter(kind) {
 }
 
 function reset() {
-  q.materialName = ''; q.category = ''; q.expiry = ''
-  q.unit = ''; q.shelf_location = ''; q.status = ''
+  q.materialName = ''; q.category = ''; q.batch_count = ''
+  q.expiry = ''; q.unit = ''; q.shelf_location = ''; q.status = ''
   load()
 }
 
@@ -140,5 +157,6 @@ onMounted(load)
 .card b.black { color:#333; }
 
 .table-title { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 10px; }
+/* 筛选栏样式，紧凑对齐表头 */
 .toolbar { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
 </style>
