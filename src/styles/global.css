@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #eaf5f2; }
+.page-card { background:#fff; padding:16px; border-radius:6px; }
+.toolbar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
