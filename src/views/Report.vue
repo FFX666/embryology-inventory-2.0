@@ -20,7 +20,7 @@
       </div>
     </div>
 
-    <!-- 区域二：出库批号明细筛选 -->
+    <!-- 区域二：出库批号明细 -->
     <div class="section-box">
       <div class="section-title">出库批号明细</div>
       <div class="filter-row">
@@ -61,11 +61,11 @@
       <el-tabs v-model="activeTab" class="custom-tabs">
         <el-tab-pane label="按批号汇总" name="summary">
           <el-table :data="tableData" border size="small" style="width: 100%" height="360">
-            <el-table-column prop="material_code" label="耗材编码" width="110" align="center" />
-            <el-table-column prop="material_name" label="耗材名称" min-width="160" />
+            <el-table-column prop="material_code" label="耗材编码" width="100" align="center" />
+            <el-table-column prop="material_name" label="耗材名称" min-width="180" />
             <el-table-column prop="spec" label="规格型号" width="110" align="center" />
             <el-table-column prop="manufacturer" label="生产厂家" width="110" align="center" />
-            <el-table-column prop="batch_no" label="批号" width="110" align="center" />
+            <el-table-column prop="batch_no" label="批号" width="100" align="center" />
             <el-table-column prop="system_batch_no" label="系统批次编号" width="120" align="center" />
             <el-table-column prop="in_date" label="入库日期" width="100" align="center" />
             <el-table-column prop="expiry_date" label="有效期" width="100" align="center" />
@@ -80,7 +80,7 @@
         <el-tab-pane label="逐笔出库明细" name="detail">
           <el-table :data="tableData" border size="small" style="width: 100%" height="360">
             <el-table-column prop="out_date" label="出库日期" width="110" align="center" />
-            <el-table-column prop="material_name" label="耗材名称" min-width="160" />
+            <el-table-column prop="material_name" label="耗材名称" min-width="180" />
             <el-table-column prop="spec" label="规格型号" width="110" align="center" />
             <el-table-column prop="batch_no" label="批号" width="110" align="center" />
             <el-table-column prop="quantity" label="使用数量" width="90" align="center" />
@@ -91,14 +91,17 @@
           </el-table>
         </el-tab-pane>
       </el-tabs>
-      
-      <div class="footer-tip">请设置条件后点击“查询批号”</div>
+
+      <!-- 底部统计提示（对应图片最下方文字） -->
+      <div class="footer-result">
+        查询完成: 明细 {{ tableData.length }} 条，批号汇总 {{ summaryCount }} 条；日期: {{ detailQuery.startDate || '不限' }} 至 {{ detailQuery.endDate || '不限' }}；分类: {{ detailQuery.category || '全部分类' }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import { api } from '@/api'
@@ -114,6 +117,12 @@ const detailQuery = reactive({
   materialName: '',
   category: '',
   batchNo: ''
+})
+
+// 模拟汇总数量（实际应基于后端返回或去重统计）
+const summaryCount = computed(() => {
+  const batches = new Set(tableData.value.map(item => item.batch_no))
+  return batches.size
 })
 
 // 通用导出函数
@@ -160,7 +169,6 @@ async function exportAll() {
 
 // 查询出库批号明细
 async function loadOutboundDetail() {
-  // 后端查询逻辑（模拟真实调用，实际后端需有对应接口）
   const payload = {
     start: detailQuery.startDate,
     end: detailQuery.endDate,
@@ -168,7 +176,8 @@ async function loadOutboundDetail() {
     category: detailQuery.category,
     batchNo: detailQuery.batchNo
   }
-  // 这里复用现有出库接口，实际可能需要单独接口支持分页和更多条件
+  
+  // 模拟真实数据，这里使用 api.outbound.list 的返回，实际接口可以扩展
   const rawList = await api.outbound.list(payload)
   
   // 前端简单映射为图片所要求的13列（按批号汇总视图）
@@ -178,13 +187,13 @@ async function loadOutboundDetail() {
     spec: item.spec,
     manufacturer: item.manufacturer,
     batch_no: item.batch_no,
-    system_batch_no: `SYS-${item.batch_no}`,
-    in_date: item.in_date || item.out_date, // 若无入库日期则暂用出库日期
+    system_batch_no: `SYS-${item.batch_no || 0}`,
+    in_date: item.in_date || item.out_date,
     expiry_date: item.expiry_date,
     quantity: item.quantity,
     unit: item.unit,
     shelf_location: item.shelf_location,
-    usage_range: `${item.out_date} 至 ${item.out_date}`,
+    usage_range: item.out_date ? `${item.out_date} 至 ${item.out_date}` : '',
     category: item.category,
     // 逐笔明细需要的字段
     out_date: item.out_date,
@@ -217,6 +226,8 @@ async function exportOutboundDetail() {
 
 onMounted(async () => {
   categories.value = await api.dict.list({ type: 'category' })
+  // 初始加载一些数据以便展示效果
+  loadOutboundDetail()
 })
 </script>
 
@@ -227,9 +238,9 @@ onMounted(async () => {
 .section-box { background: #fff; border-radius: 6px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
 .section-title { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 12px; }
 
-/* 顶部按钮矩阵 */
-.button-grid { display: flex; gap: 10px; margin-bottom: 10px; }
-.button-grid .el-button { flex: 1; }
+/* 顶部按钮矩阵：一行6个 */
+.button-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 10px; }
+.button-grid .el-button { margin: 0; width: 100%; }
 
 /* 一键导出按钮 */
 .full-width-btn { display: flex; }
@@ -245,6 +256,6 @@ onMounted(async () => {
 .custom-tabs :deep(.el-tabs__header) { margin-bottom: 10px; }
 .custom-tabs :deep(.el-tabs__item) { font-size: 13px; }
 
-/* 底部提示 */
-.footer-tip { font-size: 12px; color: #888; margin-top: 10px; }
+/* 底部查询结果统计提示 */
+.footer-result { font-size: 12px; color: #666; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #eee; }
 </style>
