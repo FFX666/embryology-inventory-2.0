@@ -1,90 +1,126 @@
 <template>
-  <div class="page-card">
-    <h3>当前账号</h3>
-    <el-form :model="pwdForm" label-width="120px" style="max-width:640px">
-      <el-form-item label="当前登录">
-        {{ user?.username }} 权限：{{ user?.role === 'admin' ? '管理员' : '普通入库员' }}
-      </el-form-item>
-      <el-form-item label="原密码">
-        <el-input v-model="pwdForm.oldPwd" type="password" show-password />
-      </el-form-item>
-      <el-form-item label="新密码">
-        <el-input v-model="pwdForm.newPwd" type="password" show-password />
-      </el-form-item>
-      <el-form-item label="确认新密码">
-        <el-input v-model="pwdForm.confirmPwd" type="password" show-password />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="changePwd">修改密码</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="settings-page">
+    <h2 class="page-title">系统设置</h2>
 
-    <el-divider />
-
-    <h3>账号权限管理</h3>
-    <p style="color:#888;font-size:13px">管理员可新增账号、重置密码、调整权限角色。</p>
-    <div class="toolbar">
-      <el-input v-model="newUser.username" placeholder="工号" style="width:140px" />
-      <el-input v-model="newUser.name" placeholder="姓名/显示名" style="width:140px" />
-      <el-select v-model="newUser.role" placeholder="权限角色" style="width:140px">
-        <el-option label="普通入库员" value="user" />
-        <el-option label="管理员" value="admin" />
-      </el-select>
-      <el-input v-model="newUser.password" placeholder="初始密码" style="width:160px" />
-      <el-button type="primary" @click="addUser">保存账号</el-button>
-      <el-button @click="clearUser">清空</el-button>
+    <!-- 区域一：当前账号 -->
+    <div class="section-box">
+      <div class="section-title">当前账号</div>
+      <div class="pwd-header">当前登录：{{ user?.username }} 权限：{{ user?.role === 'admin' ? '管理员' : '普通入库员' }}</div>
+      
+      <div class="pwd-form-row">
+        <div class="form-item">
+          <label>原密码</label>
+          <el-input v-model="pwdForm.oldPwd" type="password" show-password />
+        </div>
+        <div class="form-item">
+          <label>新密码</label>
+          <el-input v-model="pwdForm.newPwd" type="password" show-password />
+        </div>
+        <div class="form-item">
+          <label>确认新密码</label>
+          <el-input v-model="pwdForm.confirmPwd" type="password" show-password />
+        </div>
+        <div class="form-item-btn">
+          <el-button type="success" style="width: 100%;" @click="changePwd">修改密码</el-button>
+        </div>
+      </div>
     </div>
 
-    <el-table :data="users" border height="280" size="small">
-      <el-table-column prop="username" label="账号" width="140" />
-      <el-table-column prop="name" label="姓名" width="180" />
-      <el-table-column label="角色" width="160">
-        <template #default="{ row }">
-          <el-select v-model="row.role" size="small" @change="updateUser(row)">
+    <!-- 区域二：账号权限管理 -->
+    <div class="section-box">
+      <div class="section-title">账号权限管理</div>
+      <div class="section-tip">管理员可新增账号、重置密码、调整权限角色。</div>
+      
+      <div class="inline-form">
+        <div class="form-item">
+          <label>账号</label>
+          <el-input v-model="newUser.username" placeholder="请输入账号" />
+        </div>
+        <div class="form-item">
+          <label>姓名/显示名</label>
+          <el-input v-model="newUser.name" placeholder="请输入姓名" />
+        </div>
+        <div class="form-item">
+          <label>权限角色</label>
+          <el-select v-model="newUser.role" placeholder="请选择角色">
             <el-option label="普通入库员" value="user" />
             <el-option label="管理员" value="admin" />
           </el-select>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="120">
-        <template #default="{ row }">
-          <el-tag :type="row.status ? 'success' : 'info'">{{ row.status ? '启用' : '禁用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="120">
-        <template #default="{ row }">
-          <el-button link type="danger" @click="disable(row)">禁用</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        </div>
+        <div class="form-item">
+          <label>初始/重置密码</label>
+          <el-input v-model="newUser.password" placeholder="请输入初始密码" />
+        </div>
+        <div class="form-checkbox">
+          <el-checkbox v-model="newUser.status">* 启用</el-checkbox>
+        </div>
+        <div class="form-buttons">
+          <el-button type="success" @click="addUser">保存账号</el-button>
+          <el-button @click="clearUser">清空</el-button>
+        </div>
+      </div>
 
-    <el-divider />
-
-    <h3>下拉选项维护</h3>
-    <div class="toolbar">
-      <el-select v-model="dictType" style="width:160px">
-        <el-option label="储存条件" value="storage" />
-        <el-option label="分类" value="category" />
-      </el-select>
-      <el-input v-model="dictLabel" placeholder="选项内容" style="width:200px" />
-      <el-input-number v-model="dictSort" :min="0" />
-      <el-button type="primary" @click="saveDict">保存选项</el-button>
+      <el-table :data="users" border size="small" style="width: 100%; margin-top: 15px;">
+        <el-table-column prop="username" label="账号" width="150" align="center" />
+        <el-table-column prop="name" label="姓名" width="180" align="center" />
+        <el-table-column label="角色" align="center">
+          <template #default="{ row }">
+            <span>{{ row.role === 'admin' ? '管理员' : '普通入库员' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="150" align="center">
+          <template #default="{ row }">
+            <span>{{ row.status ? '启用' : '停用' }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
-    <el-table :data="dicts" border height="240" size="small">
-      <el-table-column prop="label" label="选项内容" />
-      <el-table-column prop="sort" label="排序号" width="120" />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.status ? 'success' : 'info'">{{ row.status ? '启用' : '停用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="100">
-        <template #default="{ row }">
-          <el-button link type="danger" @click="removeDict(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 区域三：下拉选项维护 -->
+    <div class="section-box">
+      <div class="section-title">下拉选项维护</div>
+      
+      <div class="inline-form">
+        <div class="form-item" style="width: 160px;">
+          <label>下拉类型</label>
+          <el-select v-model="dictForm.type" @change="loadDicts">
+            <el-option label="储存条件" value="storage" />
+            <el-option label="分类" value="category" />
+          </el-select>
+        </div>
+        <div class="form-item" style="width: 200px;">
+          <label>选项内容</label>
+          <el-input v-model="dictForm.label" placeholder="请输入内容" />
+        </div>
+        <div class="form-item" style="width: 120px;">
+          <label>排序号</label>
+          <el-input-number v-model="dictForm.sort" :min="0" style="width: 100%;" />
+        </div>
+        <div class="form-checkbox">
+          <el-checkbox v-model="dictForm.status">* 启用</el-checkbox>
+        </div>
+        <div class="form-buttons">
+          <el-button type="success" @click="saveDict">保存选项</el-button>
+          <el-button @click="clearDict">清空</el-button>
+          <el-button type="warning" @click="removeDict" :disabled="!dictForm.id">删除选项</el-button>
+        </div>
+      </div>
+
+      <el-table :data="dicts" border size="small" style="width: 100%; margin-top: 15px;">
+        <el-table-column prop="label" label="选项内容" align="center" />
+        <el-table-column prop="sort" label="排序号" width="150" align="center" />
+        <el-table-column label="状态" width="150" align="center">
+          <template #default="{ row }">
+            <span>{{ row.status ? '启用' : '停用' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" align="center">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="editDict(row)">编辑</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
   </div>
 </template>
 
@@ -97,16 +133,8 @@ import { useUserStore } from '@/store/user'
 const store = useUserStore()
 const user = computed(() => store.user)
 
+// ----- 区域一：密码修改 -----
 const pwdForm = reactive({ oldPwd: '', newPwd: '', confirmPwd: '' })
-const users = ref([])
-const newUser = reactive({ username: '', name: '', role: 'user', password: '' })
-const dictType = ref('storage')
-const dictLabel = ref('')
-const dictSort = ref(0)
-const dicts = ref([])
-
-async function loadUsers() { users.value = await api.user.list() }
-async function loadDicts() { dicts.value = await api.dict.list({ type: dictType.value }) }
 
 async function changePwd() {
   if (!pwdForm.oldPwd || !pwdForm.newPwd) { ElMessage.warning('请填写完整'); return }
@@ -119,6 +147,12 @@ async function changePwd() {
   pwdForm.oldPwd = pwdForm.newPwd = pwdForm.confirmPwd = ''
 }
 
+// ----- 区域二：账号权限管理 -----
+const users = ref([])
+const newUser = reactive({ username: '', name: '', role: 'user', password: '', status: true })
+
+async function loadUsers() { users.value = await api.user.list() }
+
 async function addUser() {
   if (!newUser.username || !newUser.password) { ElMessage.warning('工号密码必填'); return }
   const op = store.user
@@ -130,32 +164,72 @@ async function addUser() {
 }
 
 function clearUser() {
-  newUser.username = ''; newUser.name = ''; newUser.role = 'user'; newUser.password = ''
+  newUser.username = ''; newUser.name = ''; newUser.role = 'user'; newUser.password = ''; newUser.status = true
 }
 
-async function updateUser(row) {
-  const op = store.user
-  await api.user.save({ ...row, _op: op.username, _opName: op.name })
-  ElMessage.success('已更新')
+// ----- 区域三：下拉选项维护 -----
+const dicts = ref([])
+const dictForm = reactive({ id: null, type: 'storage', label: '', sort: 0, status: true })
+
+async function loadDicts() { 
+  dicts.value = await api.dict.list({ type: dictForm.type }) 
 }
 
-async function disable(row) {
-  const op = store.user
-  await api.user.remove({ id: row.id, _op: op.username, _opName: op.name })
-  loadUsers()
+function editDict(row) {
+  dictForm.id = row.id
+  dictForm.type = row.type
+  dictForm.label = row.label
+  dictForm.sort = row.sort
+  dictForm.status = !!row.status
 }
 
 async function saveDict() {
-  if (!dictLabel.value) { ElMessage.warning('请输入选项内容'); return }
-  await api.dict.save({ type: dictType.value, label: dictLabel.value, sort: dictSort.value })
-  dictLabel.value = ''
+  if (!dictForm.label) { ElMessage.warning('请输入选项内容'); return }
+  await api.dict.save({ ...dictForm, status: dictForm.status ? 1 : 0 })
+  ElMessage.success('已保存')
+  clearDict()
   loadDicts()
 }
 
-async function removeDict(row) {
-  await api.dict.remove({ id: row.id })
+function clearDict() {
+  dictForm.id = null; dictForm.label = ''; dictForm.sort = 0; dictForm.status = true
+}
+
+async function removeDict() {
+  if (!dictForm.id) { ElMessage.warning('请先选择要删除的选项'); return }
+  await api.dict.remove({ id: dictForm.id })
+  ElMessage.success('已删除')
+  clearDict()
   loadDicts()
 }
 
-onMounted(() => { loadUsers(); loadDicts() })
+onMounted(() => {
+  loadUsers()
+  loadDicts()
+})
 </script>
+
+<style scoped>
+.settings-page { padding-bottom: 20px; }
+.page-title { font-size: 18px; margin: 0 0 16px 0; font-weight: bold; color: #333; }
+
+/* 区块样式 */
+.section-box { background: #fff; border-radius: 6px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+.section-title { font-size: 15px; font-weight: bold; color: #333; margin-bottom: 12px; }
+.section-tip { font-size: 13px; color: #888; margin-bottom: 12px; }
+
+/* 密码区横向表单 */
+.pwd-header { font-size: 14px; margin-bottom: 10px; }
+.pwd-form-row { display: flex; gap: 16px; align-items: flex-end; }
+.pwd-form-row .form-item { flex: 1; }
+.pwd-form-row .form-item-btn { width: 180px; }
+
+/* 通用表单元素样式 */
+.form-item { display: flex; flex-direction: column; gap: 6px; }
+.form-item label { font-size: 13px; color: #555; }
+.form-checkbox { display: flex; align-items: flex-end; padding-bottom: 6px; margin-left: 10px; }
+.form-buttons { display: flex; gap: 10px; align-items: flex-end; padding-bottom: 2px; margin-left: auto; }
+
+/* 行内表单组合 */
+.inline-form { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+</style>
