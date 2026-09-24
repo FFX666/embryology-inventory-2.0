@@ -1,0 +1,58 @@
+{
+  "name": "embryology-inventory",
+  "version": "1.0.0",
+  "description": "胚胎实验室库存管理系统",
+  "main": "electron/main.js",
+  "author": "Embryology Lab",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "vite build && electron-builder --win",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "better-sqlite3": "^11.3.0",
+    "dayjs": "^1.11.13",
+    "element-plus": "^2.8.4",
+    "pinia": "^2.2.4",
+    "vue": "^3.5.10",
+    "vue-router": "^4.4.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.4",
+    "concurrently": "^9.0.1",
+    "cross-env": "^7.0.3",
+    "electron": "^32.1.2",
+    "electron-builder": "^25.1.7",
+    "vite": "^5.4.8",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.embryology.inventory",
+    "productName": "胚胎实验室库存管理",
+    "directories": { "output": "release" },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "胚胎实验室库存管理"
+    }
+  }
+}
