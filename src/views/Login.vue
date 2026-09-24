@@ -17,16 +17,26 @@
         <p class="tip">请输入工号，系统将自动显示对应姓名</p>
         <el-form :model="form" label-position="top" @submit.prevent>
           <el-form-item label="工号">
-            <el-input v-model="form.username" placeholder="请输入工号"
-                      @blur="fetchName" @keyup.enter="doLogin" />
+            <el-input 
+              v-model="form.username" 
+              placeholder="请输入工号"
+              @blur="checkWorkId" 
+              @keyup.enter="doLogin" 
+            />
+            <div class="hint-text" v-if="nameState === 'found'">姓名：{{ form.name }}</div>
+            <div class="hint-text error" v-if="nameState === 'notfound'">未找到该工号</div>
           </el-form-item>
-          <el-form-item label="姓名">
-            <el-input v-model="form.name" disabled />
-          </el-form-item>
+          
           <el-form-item label="密码">
-            <el-input v-model="form.password" type="password" show-password
-                      placeholder="请输入密码" @keyup.enter="doLogin" />
+            <el-input 
+              v-model="form.password" 
+              type="password" 
+              show-password
+              placeholder="请输入密码" 
+              @keyup.enter="doLogin" 
+            />
           </el-form-item>
+          
           <div class="btns">
             <el-button @click="onExit">退出</el-button>
             <el-button type="success" @click="doLogin">登录</el-button>
@@ -34,12 +44,11 @@
         </el-form>
       </div>
     </div>
-    <div class="bottom">打开胚胎实验室库存管理软件</div>
   </div>
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
@@ -48,12 +57,23 @@ import { api } from '@/api'
 const router = useRouter()
 const store = useUserStore()
 const form = reactive({ username: '', name: '', password: '' })
+const nameState = ref('')
 
-async function fetchName() {
-  if (!form.username) return
+async function checkWorkId() {
+  if (!form.username) {
+    form.name = ''
+    nameState.value = ''
+    return
+  }
   const list = await api.user.list()
   const u = list.find(x => x.username === form.username)
-  form.name = u ? u.name : ''
+  if (u) {
+    form.name = u.name
+    nameState.value = 'found'
+  } else {
+    form.name = ''
+    nameState.value = 'notfound'
+  }
 }
 
 async function doLogin() {
@@ -61,6 +81,14 @@ async function doLogin() {
     ElMessage.warning('请输入工号和密码')
     return
   }
+  if (nameState.value !== 'found') {
+    await checkWorkId()
+    if (nameState.value !== 'found') {
+      ElMessage.error('未找到该工号或工号无效')
+      return
+    }
+  }
+
   const res = await api.auth.login({
     username: form.username, password: form.password
   })
@@ -80,7 +108,7 @@ onMounted(() => {
 
 <style scoped>
 .login-wrap { height:100%; background:#dfeff0; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; }
+  align-items:center; justify-content:center; position: relative; }
 .login-box { width:760px; display:flex; background:#fff; box-shadow:0 6px 24px rgba(0,0,0,.1);
   border-radius:8px; overflow:hidden; }
 .left { background:#4a9d92; color:#fff; width:280px; padding:36px 24px; }
@@ -91,8 +119,8 @@ onMounted(() => {
 .right { flex:1; padding:36px 40px; }
 .right h3 { margin:0 0 6px; }
 .right .tip { color:#888; font-size:13px; margin:0 0 16px; }
+.hint-text { font-size: 13px; color: #4a9d92; margin-top: 4px; }
+.hint-text.error { color: #f56c6c; }
 .btns { display:flex; gap:12px; margin-top:10px; }
 .btns .el-button { flex:1; }
-.bottom { margin-top:40px; font-size:34px; color:#1e6a5e; font-weight:bold;
-  letter-spacing:4px; text-shadow:1px 1px 0 #fff; }
 </style>
